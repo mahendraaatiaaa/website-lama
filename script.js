@@ -46,6 +46,14 @@ function preprocessImage(image) {
     return new ort.Tensor('float32', input, [1, 3, 177, 177]);
 }
 
+// Softmax function to convert logits to probabilities
+function softmax(arr) {
+    const maxVal = Math.max(...arr); // Stabilitas numerik
+    const exps = arr.map(x => Math.exp(x - maxVal));
+    const sumExps = exps.reduce((sum, exp) => sum + exp, 0);
+    return exps.map(exp => exp / sumExps);
+}
+
 // Upload and classify image
 function uploadAndClassifyImage() {
     const file = imageUpload.files[0];
@@ -68,7 +76,10 @@ function uploadAndClassifyImage() {
                 const feeds = { [model.inputNames[0]]: tensor };
                 const output = await model.run(feeds);
 
-                const probabilities = output[model.outputNames[0]].data;
+                // Convert model output to probabilities
+                const rawOutput = output[model.outputNames[0]].data;
+                const probabilities = softmax(Array.from(rawOutput));
+
                 const classNames = [
                     'anggur', 'apel', 'belimbing', 'jeruk', 'kiwi',
                     'mangga', 'nanas', 'pisang', 'semangka', 'stroberi'
